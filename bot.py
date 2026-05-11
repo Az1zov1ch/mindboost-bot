@@ -1,11 +1,14 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
-import json, os
+import json, os, logging
+
+logging.basicConfig(level=logging.INFO)
 
 TOKEN = "8738294425:AAHnZt6gaJAfYC1bQeztaf8saCEGIhalUvk"
-BOT_USERNAME = "@mindboost_uz_bot"
+BOT_USERNAME = "mindboost_uz_bot"
 ADMIN_ID = 7324883893
-DATA_FILE = "data.json"
+
+DATA_FILE = os.environ.get("DATA_PATH", "data.json")
 
 LANGS = {
     "uz": "🇺🇿 O'zbek",
@@ -18,59 +21,43 @@ LANGS = {
 TOPICS = {
     "uz": {
         "muvaffaqiyat": {"e": "🔥", "n": "Muvaffaqiyat", "cats": {"dunyo_liderlari": "Dunyo liderlari", "ozbeklar": "O'zbek yetakchilar", "mindset": "Mindset & Psixologiya"}},
-        "talim":        {"e": "🎓", "n": "Ta'lim yo'li",  "cats": {"top_univer": "Harvard, MIT, Oxford", "stipendiya": "Stipendiyalar", "ielts": "IELTS & SAT sirlari"}},
-        "biznes":       {"e": "💼", "n": "Biznes",        "cats": {"startap": "Startap g'oyalari", "freelance": "Freelance & Remote", "intervyu": "CV & Intervyu"}},
-        "rivojlanish":  {"e": "💪", "n": "Rivojlanish",   "cats": {"soglik": "Sog'lom hayot", "kitoblar": "Kitob tahlillari", "vaqt": "Vaqtni boshqarish"}},
+        "talim":        {"e": "🎓", "n": "Ta'lim yo'li",  "cats": {"top_univer": "Harvard, MIT, Oxford", "stipendiya": "Stipendiyalar", "ielts": "IELTS & SAT"}},
+        "biznes":       {"e": "💼", "n": "Biznes",        "cats": {"startap": "Startap", "freelance": "Freelance", "intervyu": "CV & Intervyu"}},
+        "rivojlanish":  {"e": "💪", "n": "Rivojlanish",   "cats": {"soglik": "Sog'lom hayot", "kitoblar": "Kitoblar", "vaqt": "Vaqt boshqarish"}},
         "global":       {"e": "🌍", "n": "Global yoshlar", "cats": {"chet_el": "Chet elda o'qish", "tajriba": "Xalqaro tajriba", "yoshlar": "Yoshlar tarixi"}},
     },
     "ru": {
-        "uspeh":        {"e": "🔥", "n": "Успех",         "cats": {"lidery": "Мировые лидеры", "uzbeki": "Узбекские лидеры", "mindset": "Мышление"}},
-        "obrazovanie":  {"e": "🎓", "n": "Образование",   "cats": {"top_univer": "Harvard, MIT, Oxford", "stipendii": "Стипендии", "ielts": "IELTS & ЕГЭ"}},
-        "biznes":       {"e": "💼", "n": "Бизнес",        "cats": {"startap": "Стартапы", "freelance": "Фриланс", "intervyu": "CV & Интервью"}},
-        "razvitie":     {"e": "💪", "n": "Саморазвитие",  "cats": {"zdorove": "Здоровье", "knigi": "Обзоры книг", "vremya": "Тайм-менеджмент"}},
-        "globalnyy":    {"e": "🌍", "n": "Молодёжь мира", "cats": {"zagranica": "Учёба за рубежом", "opyt": "Международный опыт", "istorii": "Истории успеха"}},
+        "uspeh":       {"e": "🔥", "n": "Успех",         "cats": {"lidery": "Мировые лидеры", "uzbeki": "Узбекские лидеры", "mindset": "Мышление"}},
+        "obrazovanie": {"e": "🎓", "n": "Образование",   "cats": {"top_univer": "Harvard, MIT, Oxford", "stipendii": "Стипендии", "ielts": "IELTS & ЕГЭ"}},
+        "biznes":      {"e": "💼", "n": "Бизнес",        "cats": {"startap": "Стартапы", "freelance": "Фриланс", "intervyu": "CV & Интервью"}},
+        "razvitie":    {"e": "💪", "n": "Саморазвитие",  "cats": {"zdorove": "Здоровье", "knigi": "Книги", "vremya": "Тайм-менеджмент"}},
+        "globalnyy":   {"e": "🌍", "n": "Молодёжь мира", "cats": {"zagranica": "Учёба за рубежом", "opyt": "Международный опыт", "istorii": "Истории успеха"}},
     },
     "en": {
-        "success":      {"e": "🔥", "n": "Success",       "cats": {"world_leaders": "World Leaders", "mindset": "Mindset & Psychology", "habits": "Habits & Discipline"}},
-        "education":    {"e": "🎓", "n": "Education",     "cats": {"top_univer": "Harvard, MIT, Oxford", "scholarships": "Scholarships", "ielts": "IELTS & SAT"}},
-        "business":     {"e": "💼", "n": "Business",      "cats": {"startup": "Startups", "freelance": "Freelance & Remote", "career": "Career & CV"}},
-        "selfdev":      {"e": "💪", "n": "Self-Development", "cats": {"health": "Health & Sport", "books": "Book Reviews", "productivity": "Productivity"}},
-        "global":       {"e": "🌍", "n": "Global Youth",  "cats": {"study_abroad": "Study Abroad", "experience": "International Experience", "stories": "Success Stories"}},
+        "success":   {"e": "🔥", "n": "Success",          "cats": {"world_leaders": "World Leaders", "mindset": "Mindset", "habits": "Habits & Discipline"}},
+        "education": {"e": "🎓", "n": "Education",        "cats": {"top_univer": "Harvard, MIT, Oxford", "scholarships": "Scholarships", "ielts": "IELTS & SAT"}},
+        "business":  {"e": "💼", "n": "Business",         "cats": {"startup": "Startups", "freelance": "Freelance", "career": "Career & CV"}},
+        "selfdev":   {"e": "💪", "n": "Self-Development", "cats": {"health": "Health & Sport", "books": "Books", "productivity": "Productivity"}},
+        "global":    {"e": "🌍", "n": "Global Youth",     "cats": {"study_abroad": "Study Abroad", "experience": "International", "stories": "Success Stories"}},
     },
     "tr": {
-        "basari":       {"e": "🔥", "n": "Başarı",        "cats": {"dunya_liderleri": "Dünya Liderleri", "mindset": "Düşünce Yapısı", "aliskanliklar": "Alışkanlıklar"}},
-        "egitim":       {"e": "🎓", "n": "Eğitim",        "cats": {"top_univer": "Harvard, MIT, Oxford", "burslar": "Burslar", "dil_sinavlari": "Dil Sınavları"}},
-        "is":           {"e": "💼", "n": "İş & Kariyer",  "cats": {"girisimcilik": "Girişimcilik", "freelance": "Freelance", "mulakat": "CV & Mülakat"}},
-        "gelisim":      {"e": "💪", "n": "Kişisel Gelişim", "cats": {"saglik": "Sağlık & Spor", "kitaplar": "Kitap Yorumları", "verimlilik": "Verimlilik"}},
-        "genclik":      {"e": "🌍", "n": "Dünya Gençliği", "cats": {"yurt_disi": "Yurt Dışı Eğitim", "deneyim": "Uluslararası Deneyim", "hikayeler": "Başarı Hikayeleri"}},
+        "basari":  {"e": "🔥", "n": "Başarı",           "cats": {"dunya_liderleri": "Dünya Liderleri", "mindset": "Düşünce", "aliskanliklar": "Alışkanlıklar"}},
+        "egitim":  {"e": "🎓", "n": "Eğitim",           "cats": {"top_univer": "Harvard, MIT, Oxford", "burslar": "Burslar", "dil_sinavlari": "Dil Sınavları"}},
+        "is":      {"e": "💼", "n": "İş & Kariyer",     "cats": {"girisimcilik": "Girişimcilik", "freelance": "Freelance", "mulakat": "CV & Mülakat"}},
+        "gelisim": {"e": "💪", "n": "Kişisel Gelişim",  "cats": {"saglik": "Sağlık", "kitaplar": "Kitaplar", "verimlilik": "Verimlilik"}},
+        "genclik": {"e": "🌍", "n": "Dünya Gençliği",   "cats": {"yurt_disi": "Yurt Dışı", "deneyim": "Deneyim", "hikayeler": "Başarı Hikayeleri"}},
     },
     "ar": {
-        "najah":        {"e": "🔥", "n": "النجاح",        "cats": {"qada": "قادة العالم", "mindset": "طريقة التفكير", "adat": "العادات والانضباط"}},
-        "talim":        {"e": "🎓", "n": "التعليم",       "cats": {"jamiat": "هارفارد وMIT وأكسفورد", "manah": "المنح الدراسية", "ielts": "IELTS والاختبارات"}},
-        "amal":         {"e": "💼", "n": "الأعمال",       "cats": {"sharika": "الشركات الناشئة", "hurr": "العمل الحر", "wazifa": "السيرة الذاتية"}},
-        "tatawwur":     {"e": "💪", "n": "التطوير الذاتي", "cats": {"sihha": "الصحة والرياضة", "kutub": "مراجعات الكتب", "waqt": "إدارة الوقت"}},
-        "shabab":       {"e": "🌍", "n": "شباب العالم",   "cats": {"kharij": "الدراسة في الخارج", "tajriba": "التجربة الدولية", "qisas": "قصص النجاح"}},
+        "najah":    {"e": "🔥", "n": "النجاح",          "cats": {"qada": "قادة العالم", "mindset": "طريقة التفكير", "adat": "العادات"}},
+        "talim":    {"e": "🎓", "n": "التعليم",         "cats": {"jamiat": "هارفارد وMIT", "manah": "المنح", "ielts": "IELTS"}},
+        "amal":     {"e": "💼", "n": "الأعمال",         "cats": {"sharika": "الشركات الناشئة", "hurr": "العمل الحر", "wazifa": "السيرة الذاتية"}},
+        "tatawwur": {"e": "💪", "n": "التطوير الذاتي",  "cats": {"sihha": "الصحة", "kutub": "الكتب", "waqt": "إدارة الوقت"}},
+        "shabab":   {"e": "🌍", "n": "شباب العالم",     "cats": {"kharij": "الدراسة في الخارج", "tajriba": "التجربة", "qisas": "قصص النجاح"}},
     },
 }
 
-WELCOME = {
-    "uz": "Assalomu alaykum! 🎧\n\nO'zbekiston yoshlari uchun eng yaxshi podcast kliplari.\n\nTil tanlang:",
-    "ru": "Добро пожаловать! 🎧\n\nЛучшие подкасты для молодёжи.\n\nВыберите язык:",
-    "en": "Welcome! 🎧\n\nThe best podcast clips for youth.\n\nChoose your language:",
-    "tr": "Hoş geldiniz! 🎧\n\nGençler için en iyi podcast klipler.\n\nDil seçin:",
-    "ar": "!أهلاً وسهلاً 🎧\n\nأفضل مقاطع البودكاست للشباب.\n\nاختر لغتك:",
-}
-
-BACK_BTN = {"uz": "⬅️ Orqaga", "ru": "⬅️ Назад", "en": "⬅️ Back", "tr": "⬅️ Geri", "ar": "⬅️ رجوع"}
-STATS_BTN = {"uz": "📊 Statistika", "ru": "📊 Статистика", "en": "📊 Statistics", "tr": "📊 İstatistik", "ar": "📊 إحصائيات"}
-SAVE_BTN  = {"uz": "🔖 Saqlash", "ru": "🔖 Сохранить", "en": "🔖 Save", "tr": "🔖 Kaydet", "ar": "🔖 حفظ"}
-NO_CLIPS  = {"uz": "Hali klip yo'q. Tez orada! 🚀", "ru": "Клипов пока нет. Скоро! 🚀", "en": "No clips yet. Coming soon! 🚀", "tr": "Henüz klip yok. Yakında! 🚀", "ar": "لا توجد مقاطع بعد. قريباً! 🚀"}
-
-def load():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    db = {"clips": {}, "users": {}, "saved": {}, "stats": {"total": 0, "by_lang": {}, "by_topic": {}}}
+def empty_db():
+    db = {"clips": {}, "users": {}, "stats": {"total": 0, "by_lang": {}, "by_topic": {}}}
     for lang in TOPICS:
         db["clips"][lang] = {}
         for t in TOPICS[lang]:
@@ -79,9 +66,21 @@ def load():
                 db["clips"][lang][t][c] = []
     return db
 
+def load():
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    return empty_db()
+
 def save(db):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(db, f, ensure_ascii=False, indent=2)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(db, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error("Save error: " + str(e))
 
 DB = load()
 pending = {}
@@ -89,62 +88,71 @@ pending = {}
 def get_lang(uid):
     return DB["users"].get(str(uid), {}).get("lang", "uz")
 
-def set_lang(uid, lang):
-    DB["users"].setdefault(str(uid), {})["lang"] = lang
-    save(DB)
-
-async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    global ADMIN_ID
-    uid = update.effective_user.id
-    if ADMIN_ID is None:
-        ADMIN_ID = uid
-    DB["users"].setdefault(str(uid), {"lang": "uz", "name": update.effective_user.full_name})
-    save(DB)
-
-    args = ctx.args
-    if args:
-        p = args[0]
-        parts = p.split("_")
-        if len(parts) >= 2 and parts[0] in LANGS:
-            set_lang(uid, parts[0])
-            if len(parts) >= 3 and parts[1] in TOPICS.get(parts[0], {}):
-                await show_topic(update, ctx, parts[0], parts[1])
-                return
-
-    kb = [[InlineKeyboardButton(v, callback_data="lang_" + k)] for k, v in LANGS.items()]
-    await update.message.reply_text(
-        "🎧 Yoshlar Podcast\n\nTil tanlang / Choose language:",
-        reply_markup=InlineKeyboardMarkup(kb)
-    )
-
-async def show_topics(update, ctx, lang):
-    uid = update.effective_user.id
-    set_lang(uid, lang)
+def main_menu_kb(lang):
     kb = []
     for tkey, tval in TOPICS[lang].items():
-        total = sum(len(DB["clips"][lang][tkey].get(c, [])) for c in tval["cats"])
+        total = sum(len(DB["clips"].get(lang, {}).get(tkey, {}).get(c, [])) for c in tval["cats"])
         kb.append([InlineKeyboardButton(tval["e"] + " " + tval["n"] + " (" + str(total) + ")", callback_data="t_" + lang + "_" + tkey)])
-    kb.append([InlineKeyboardButton(STATS_BTN[lang], callback_data="stats_" + lang)])
-    msg = update.callback_query.message if update.callback_query else update.message
-    text = WELCOME[lang]
-    if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(kb))
-    else:
-        await msg.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
+    kb.append([InlineKeyboardButton("🌍 Tilni o'zgartir", callback_data="main_lang")])
+    return InlineKeyboardMarkup(kb)
 
-async def show_topic(update, ctx, lang, tkey):
+def topic_menu_kb(lang, tkey):
     tval = TOPICS[lang][tkey]
     kb = []
     for ckey, cname in tval["cats"].items():
-        count = len(DB["clips"][lang][tkey].get(ckey, []))
+        count = len(DB["clips"].get(lang, {}).get(tkey, {}).get(ckey, []))
         kb.append([InlineKeyboardButton(cname + " (" + str(count) + ")", callback_data="c_" + lang + "_" + tkey + "_" + ckey)])
-    kb.append([InlineKeyboardButton(BACK_BTN[lang], callback_data="lang_" + lang)])
-    text = tval["e"] + " " + tval["n"]
-    msg = update.callback_query.message if update.callback_query else update.message
-    if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(kb))
-    else:
-        await msg.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
+    kb.append([InlineKeyboardButton("🌍 Tilni o'zgartir", callback_data="change_lang_" + tkey)])
+    kb.append([InlineKeyboardButton("⬅️ Bosh menyu", callback_data="main_menu")])
+    return InlineKeyboardMarkup(kb)
+
+def lang_select_kb(back_data):
+    kb = []
+    row = []
+    for i, (lkey, lname) in enumerate(LANGS.items()):
+        row.append(InlineKeyboardButton(lname, callback_data="setlang_" + lkey + "_" + back_data))
+        if len(row) == 2:
+            kb.append(row)
+            row = []
+    if row:
+        kb.append(row)
+    kb.append([InlineKeyboardButton("⬅️ Orqaga", callback_data="back_" + back_data)])
+    return InlineKeyboardMarkup(kb)
+
+async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    DB["users"].setdefault(str(uid), {"lang": "uz", "name": update.effective_user.full_name})
+    save(DB)
+    lang = get_lang(uid)
+
+    args = ctx.args
+    if args:
+        param = args[0]
+        parts = param.split("_", 1)
+        req_lang = parts[0] if parts[0] in TOPICS else None
+        req_tkey = parts[1] if len(parts) > 1 else None
+
+        if not req_lang:
+            for l in TOPICS:
+                if param in TOPICS[l]:
+                    req_lang = l
+                    req_tkey = param
+                    break
+
+        if req_lang and req_tkey and req_tkey in TOPICS.get(req_lang, {}):
+            DB["users"][str(uid)]["lang"] = req_lang
+            save(DB)
+            tval = TOPICS[req_lang][req_tkey]
+            await update.message.reply_text(
+                tval["e"] + " " + tval["n"],
+                reply_markup=topic_menu_kb(req_lang, req_tkey)
+            )
+            return
+
+    await update.message.reply_text(
+        "🎧 MindBoost\n\nYo'nalish tanlang:",
+        reply_markup=main_menu_kb(lang)
+    )
 
 async def button(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -153,78 +161,100 @@ async def button(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     uid = q.from_user.id
     lang = get_lang(uid)
 
-    if d.startswith("lang_"):
-        l = d[5:]
-        await show_topics(update, ctx, l)
+    if d == "main_menu":
+        await q.edit_message_text("🎧 MindBoost\n\nYo'nalish tanlang:", reply_markup=main_menu_kb(lang))
+
+    elif d == "main_lang":
+        await q.edit_message_text("🌍 Til tanlang:", reply_markup=lang_select_kb("main"))
+
+    elif d.startswith("mainlang_"):
+        new_lang = d[9:]
+        if new_lang in TOPICS:
+            DB["users"][str(uid)]["lang"] = new_lang
+            save(DB)
+            await q.edit_message_text("🎧 MindBoost\n\nYo'nalish tanlang:", reply_markup=main_menu_kb(new_lang))
 
     elif d.startswith("t_"):
         parts = d.split("_", 2)
-        await show_topic(update, ctx, parts[1], parts[2])
+        l, tkey = parts[1], parts[2]
+        if l not in TOPICS or tkey not in TOPICS[l]:
+            return
+        tval = TOPICS[l][tkey]
+        await q.edit_message_text(tval["e"] + " " + tval["n"], reply_markup=topic_menu_kb(l, tkey))
+
+    elif d.startswith("change_lang_"):
+        tkey = d[12:]
+        await q.edit_message_text("🌍 Til tanlang:", reply_markup=lang_select_kb(tkey))
+
+    elif d.startswith("setlang_"):
+        parts = d.split("_", 2)
+        new_lang, back = parts[1], parts[2]
+        if new_lang not in TOPICS:
+            return
+        DB["users"][str(uid)]["lang"] = new_lang
+        save(DB)
+        if back == "main":
+            await q.edit_message_text("🎧 MindBoost\n\nYo'nalish tanlang:", reply_markup=main_menu_kb(new_lang))
+        elif back in TOPICS.get(new_lang, {}):
+            tval = TOPICS[new_lang][back]
+            await q.edit_message_text(tval["e"] + " " + tval["n"], reply_markup=topic_menu_kb(new_lang, back))
+        else:
+            first = list(TOPICS[new_lang].keys())[0]
+            tval = TOPICS[new_lang][first]
+            await q.edit_message_text(tval["e"] + " " + tval["n"], reply_markup=topic_menu_kb(new_lang, first))
+
+    elif d.startswith("back_"):
+        back = d[5:]
+        if back == "main":
+            await q.edit_message_text("🎧 MindBoost\n\nYo'nalish tanlang:", reply_markup=main_menu_kb(lang))
+        elif back in TOPICS.get(lang, {}):
+            tval = TOPICS[lang][back]
+            await q.edit_message_text(tval["e"] + " " + tval["n"], reply_markup=topic_menu_kb(lang, back))
 
     elif d.startswith("c_"):
         parts = d.split("_", 3)
         l, tkey, ckey = parts[1], parts[2], parts[3]
-        clips = DB["clips"][l][tkey].get(ckey, [])
+        if l not in TOPICS or tkey not in TOPICS[l] or ckey not in TOPICS[l][tkey]["cats"]:
+            return
+        clips = DB["clips"].get(l, {}).get(tkey, {}).get(ckey, [])
         cname = TOPICS[l][tkey]["cats"][ckey]
         if not clips:
             await q.edit_message_text(
-                NO_CLIPS[l],
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(BACK_BTN[l], callback_data="t_" + l + "_" + tkey)]])
+                "📭 " + cname + "\n\nHali klip qo'shilmagan. Tez orada! 🚀",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Orqaga", callback_data="t_" + l + "_" + tkey)]])
             )
             return
         kb = []
         for i, clip in enumerate(clips):
             kb.append([InlineKeyboardButton("🎧 " + clip["name"], callback_data="k_" + l + "_" + tkey + "_" + ckey + "_" + str(i))])
-        kb.append([InlineKeyboardButton(BACK_BTN[l], callback_data="t_" + l + "_" + tkey)])
-        await q.edit_message_text(cname + " — " + str(len(clips)) + " klip:", reply_markup=InlineKeyboardMarkup(kb))
+        kb.append([InlineKeyboardButton("⬅️ Orqaga", callback_data="t_" + l + "_" + tkey)])
+        await q.edit_message_text(cname + " — " + str(len(clips)) + " ta klip:", reply_markup=InlineKeyboardMarkup(kb))
 
     elif d.startswith("k_"):
         parts = d.split("_", 4)
         l, tkey, ckey, idx = parts[1], parts[2], parts[3], int(parts[4])
-        clips = DB["clips"][l][tkey].get(ckey, [])
+        clips = DB["clips"].get(l, {}).get(tkey, {}).get(ckey, [])
         if idx >= len(clips):
             return
         clip = clips[idx]
         DB["stats"]["total"] = DB["stats"].get("total", 0) + 1
         DB["stats"]["by_lang"][l] = DB["stats"]["by_lang"].get(l, 0) + 1
         save(DB)
-        kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(SAVE_BTN[l], callback_data="save_" + l + "_" + tkey + "_" + ckey + "_" + str(idx))],
-            [InlineKeyboardButton(BACK_BTN[l], callback_data="c_" + l + "_" + tkey + "_" + ckey)]
-        ])
-        await q.message.reply_audio(audio=clip["file_id"], title=clip["name"], reply_markup=kb)
-        await q.edit_message_text("▶️ " + clip["name"], reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(BACK_BTN[l], callback_data="c_" + l + "_" + tkey + "_" + ckey)]]))
-
-    elif d.startswith("save_"):
-        parts = d.split("_", 4)
-        l, tkey, ckey, idx = parts[1], parts[2], parts[3], int(parts[4])
-        key = l + "_" + tkey + "_" + ckey + "_" + str(idx)
-        saved = DB["saved"].setdefault(str(uid), [])
-        if key not in saved:
-            saved.append(key)
-            save(DB)
-            await q.answer("✅ Saqlandi!" if lang == "uz" else "✅ Saved!")
-        else:
-            await q.answer("Allaqachon saqlangan!" if lang == "uz" else "Already saved!")
-
-    elif d.startswith("stats_"):
-        l = d[6:]
-        total = DB["stats"].get("total", 0)
-        by_lang = DB["stats"].get("by_lang", {})
-        text = "📊 Statistika\n\nJami tinglashlar: " + str(total) + "\n\n"
-        for ln, lname in LANGS.items():
-            cnt = by_lang.get(ln, 0)
-            text += lname + ": " + str(cnt) + "\n"
-        await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(BACK_BTN[l], callback_data="lang_" + l)]]))
+        await q.message.reply_audio(
+            audio=clip["file_id"],
+            title=clip["name"],
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Orqaga", callback_data="c_" + l + "_" + tkey + "_" + ckey)]])
+        )
+        await q.edit_message_text(
+            "▶️ " + clip["name"],
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Orqaga", callback_data="c_" + l + "_" + tkey + "_" + ckey)]])
+        )
 
 async def media_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    global ADMIN_ID
     msg = update.message
     if not msg:
         return
     uid = msg.from_user.id
-    if ADMIN_ID is None:
-        ADMIN_ID = uid
     if uid != ADMIN_ID:
         return
 
@@ -241,17 +271,21 @@ async def media_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parts = caption.strip().split(" ", 3)
         if len(parts) >= 4 and parts[0] in TOPICS and parts[1] in TOPICS[parts[0]] and parts[2] in TOPICS[parts[0]][parts[1]]["cats"]:
             lang, tkey, ckey, name = parts[0], parts[1], parts[2], parts[3]
-            DB["clips"][lang][tkey].setdefault(ckey, []).append({"name": name, "file_id": file_id})
+            DB["clips"].setdefault(lang, {}).setdefault(tkey, {}).setdefault(ckey, []).append({"name": name, "file_id": file_id})
             save(DB)
-            await msg.reply_text("✅ Qo'shildi: " + name)
+            cname = TOPICS[lang][tkey]["cats"][ckey]
+            await msg.reply_text("✅ " + name + "\n📂 " + TOPICS[lang][tkey]["n"] + " > " + cname)
         else:
             pending[uid] = file_id
-            tips = ""
-            for lang in list(TOPICS.keys())[:2]:
-                for tkey in list(TOPICS[lang].keys())[:1]:
-                    for ckey in list(TOPICS[lang][tkey]["cats"].keys())[:1]:
-                        tips += lang + " " + tkey + " " + ckey + " Klip nomi\n"
-            await msg.reply_text("✅ Fayl qabul qilindi!\n\nFormat:\n<til> <topic> <kategoriya> <nom>\n\nMisol:\n" + tips)
+            await msg.reply_text(
+                "✅ Fayl qabul qilindi!\n\n"
+                "Endi yozing:\n"
+                "<til> <topic> <kategoriya> <nom>\n\n"
+                "Misol:\n"
+                "uz muvaffaqiyat dunyo_liderlari Elon Musk\n"
+                "en success habits David Goggins\n"
+                "ru uspeh mindset Илон Маск"
+            )
         return
 
     if msg.text and uid in pending:
@@ -261,14 +295,47 @@ async def media_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             return
         lang, tkey, ckey, name = parts[0], parts[1], parts[2], parts[3]
         if lang not in TOPICS or tkey not in TOPICS[lang] or ckey not in TOPICS[lang][tkey]["cats"]:
-            await msg.reply_text("Noto'g'ri til/topic/kategoriya!")
+            await msg.reply_text("❌ Noto'g'ri!\n\nMisol:\nuz muvaffaqiyat dunyo_liderlari Elon Musk")
             return
         file_id = pending.pop(uid)
-        DB["clips"][lang][tkey].setdefault(ckey, []).append({"name": name, "file_id": file_id})
+        DB["clips"].setdefault(lang, {}).setdefault(tkey, {}).setdefault(ckey, []).append({"name": name, "file_id": file_id})
         save(DB)
-        await msg.reply_text("✅ Qo'shildi: " + name)
+        cname = TOPICS[lang][tkey]["cats"][ckey]
+        await msg.reply_text("✅ " + name + "\n📂 " + TOPICS[lang][tkey]["n"] + " > " + cname)
 
-async def broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+async def admin_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return
+    total = sum(len(DB["clips"].get(l, {}).get(t, {}).get(c, [])) for l in TOPICS for t in TOPICS[l] for c in TOPICS[l][t]["cats"])
+    by_lang = DB["stats"].get("by_lang", {})
+    lang_stats = "\n".join(LANGS[l] + ": " + str(by_lang.get(l, 0)) for l in LANGS)
+    await update.message.reply_text(
+        "👑 Admin Panel\n\n"
+        "👥 Foydalanuvchilar: " + str(len(DB["users"])) + "\n"
+        "🎧 Jami kliplar: " + str(total) + "\n"
+        "▶️ Jami tinglashlar: " + str(DB["stats"].get("total", 0)) + "\n\n"
+        "Tinglashlar:\n" + lang_stats + "\n\n"
+        "Buyruqlar:\n"
+        "/qr — QR URLlar\n"
+        "/broadcast <xabar> — Hammaga yuborish\n\n"
+        "Audio yuklash:\n"
+        "uz muvaffaqiyat dunyo_liderlari Elon Musk\n"
+        "en success habits David Goggins"
+    )
+
+async def qr_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return
+    text = "📱 QR URLlar:\n\n"
+    for lang, topics in TOPICS.items():
+        text += LANGS[lang] + ":\n"
+        for tkey, tval in topics.items():
+            url = "https://t.me/" + BOT_USERNAME + "?start=" + lang + "_" + tkey
+            text += tval["e"] + " " + tval["n"] + ":\n" + url + "\n"
+        text += "\n"
+    await update.message.reply_text(text)
+
+async def broadcast_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         return
     if not ctx.args:
@@ -284,53 +351,11 @@ async def broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             pass
     await update.message.reply_text("✅ " + str(sent) + " ta foydalanuvchiga yuborildi!")
 
-async def qr_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
-        return
-    if not ctx.args:
-        await update.message.reply_text(
-            "QR URL yaratish:\n/qr <joy> <til> <topic>\n\nMisol:\n/qr avtobus_001 uz muvaffaqiyat\n/qr maktab_14 en education\n/qr metro_yunusobod ru uspeh"
-        )
-        return
-    parts = ctx.args
-    joy = parts[0] if len(parts) > 0 else "joy"
-    lang = parts[1] if len(parts) > 1 else "uz"
-    topic = parts[2] if len(parts) > 2 else ""
-    param = lang + "_" + joy + ("_" + topic if topic else "")
-    url = "https://t.me/" + BOT_USERNAME + "?start=" + param
-    await update.message.reply_text(
-        "📱 QR URL:\n\n" + url + "\n\n📌 Bu URLni qr-code-generator.com da QR kodga aylantiring!"
-    )
-
-async def admin_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
-        return
-    total_clips = sum(
-        len(DB["clips"].get(l, {}).get(t, {}).get(c, []))
-        for l in TOPICS for t in TOPICS[l] for c in TOPICS[l][t]["cats"]
-    )
-    text = (
-        "👑 Admin Panel\n\n"
-        "👥 Foydalanuvchilar: " + str(len(DB["users"])) + "\n"
-        "🎧 Jami kliplar: " + str(total_clips) + "\n"
-        "▶️ Jami tinglashlar: " + str(DB["stats"].get("total", 0)) + "\n\n"
-        "Buyruqlar:\n"
-        "/broadcast <xabar> — Hammaga yuborish\n"
-        "/qr <joy> <til> <topic> — QR URL\n\n"
-        "Audio yuklash formati:\n"
-        "<til> <topic> <kategoriya> <nom>\n\n"
-        "Misol:\n"
-        "uz muvaffaqiyat dunyo_liderlari Elon Musk\n"
-        "en success mindset David Goggins\n"
-        "ru uspeh mindset Илон Маск"
-    )
-    await update.message.reply_text(text)
-
 app = Application.builder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("admin", admin_cmd))
-app.add_handler(CommandHandler("broadcast", broadcast))
 app.add_handler(CommandHandler("qr", qr_cmd))
+app.add_handler(CommandHandler("broadcast", broadcast_cmd))
 app.add_handler(CallbackQueryHandler(button))
 app.add_handler(MessageHandler(filters.ALL, media_handler))
 print("Bot ishlamoqda... @mindboost_uz_bot")
