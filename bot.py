@@ -4,7 +4,7 @@ import json, os
 
 TOKEN = "8738294425:AAHnZt6gaJAfYC1bQeztaf8saCEGIhalUvk"
 BOT_USERNAME = "@mindboost_uz_bot"
-ADMIN_ID = None
+ADMIN_ID = 7324883893
 DATA_FILE = "data.json"
 
 LANGS = {
